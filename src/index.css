@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+  --page-bg: #f6efe3;
+  --page-bg-soft: #fffaf2;
+  --ink-900: #142117;
+  --ink-800: #243328;
+  --ink-700: #546257;
+  --leaf-700: #123524;
+  --leaf-500: #1f5f41;
+  --mint-400: #56b89a;
+  --sky-300: #8bd2f4;
+  --sand-300: #f4d293;
+  --ember-400: #ff7c45;
+  --line: rgba(18, 53, 36, 0.1);
+  --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-display: 'Space Grotesk', 'Avenir Next', sans-serif;
+  color: var(--ink-800);
+  background: var(--page-bg);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(139, 210, 244, 0.32), transparent 32%),
+    radial-gradient(circle at top right, rgba(244, 210, 147, 0.46), transparent 34%),
+    linear-gradient(180deg, var(--page-bg-soft), var(--page-bg));
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::before {
+  width: 280px;
+  height: 280px;
+  top: 110px;
+  left: -40px;
+  background: rgba(86, 184, 154, 0.15);
+}
+
+body::after {
+  width: 240px;
+  height: 240px;
+  right: 4vw;
+  bottom: 8vh;
+  background: rgba(255, 124, 69, 0.12);
+}
+
+#root {
+  min-height: 100svh;
+}
+
+::selection {
+  background: rgba(31, 95, 65, 0.18);
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+strong {
+  color: var(--ink-900);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+h1 {
+  font-size: clamp(3rem, 5vw, 5.6rem);
+  max-width: 11ch;
+  margin-bottom: 18px;
+}
+
+h2 {
+  font-size: clamp(1.6rem, 2vw, 2.4rem);
+}
+
+h3 {
+  font-size: 1.4rem;
+}
+
+p {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  :root {
+    font-size: 15px;
+  }
+
+  h1 {
+    max-width: 12ch;
+  }
+}
