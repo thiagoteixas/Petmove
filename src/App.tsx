@@ -1,15 +1,20 @@
+import { useState } from 'react'
+import type { DayMetrics } from './api/index'
 import {
   Activity,
+  AlertTriangle,
   BellRing,
   ChevronRight,
   Flame,
+  Footprints,
   Gauge,
   HeartPulse,
-  MapPinned,
   MoonStar,
   Radar,
   ShieldCheck,
   Sparkles,
+  Timer,
+  TrendingUp,
 } from 'lucide-react'
 import {
   Area,
@@ -18,6 +23,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -27,22 +34,77 @@ import {
 } from 'recharts'
 import { SectionHeading } from './components/SectionHeading'
 import { StatCard } from './components/StatCard'
+import { usePetData } from './hooks/usePetData'
 import {
   careTimeline,
   featureHighlights,
   readinessFactors,
   sleepBreakdown,
-  topMetrics,
-  weeklyVitals,
 } from './data/mockData'
 import './App.css'
 
-const metricIcons = [Flame, MoonStar, Activity, MapPinned] as const
+type Tab = 'hoje' | 'semana' | 'tendencias'
+
 const factorIcons = [ShieldCheck, BellRing, Radar] as const
 
+const TOOLTIP_STYLE = {
+  borderRadius: 18,
+  border: '1px solid #d8dfd9',
+  background: '#fefcf7',
+  boxShadow: '0 20px 40px rgba(40, 58, 48, 0.12)',
+}
+
+function avg(arr: number[]) {
+  return arr.length > 0 ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length) : 0
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="empty-state">
+      <AlertTriangle size={20} />
+      <span>{message}</span>
+    </div>
+  )
+}
+
+function MetricValue({ value }: { value: string | number | null | undefined }) {
+  if (value == null) return <span className="metric-no-data">—</span>
+  return <>{value}</>
+}
+
 function App() {
+  const { dog, todayMetrics, weekMetrics, loading, error } = usePetData()
+
+  const [activeTab, setActiveTab] = useState<Tab>('hoje')
+
+  const chartData: DayMetrics[] = weekMetrics
+  const dogName = dog?.name ?? '—'
+  const healthScore = todayMetrics?.healthScore ?? null
+
+  const weekAvgCalories = avg(chartData.map(d => d.calories))
+  const weekAvgMinutes = avg(chartData.map(d => d.activeMinutes))
+  const weekAvgScore = avg(chartData.map(d => d.healthScore ?? 0))
+  const bestDay = chartData.length > 0
+    ? chartData.reduce((best, d) => d.activeMinutes > best.activeMinutes ? d : best).day
+    : null
+
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="app-loading__spinner" />
+        <p>Carregando dados do pet...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="app-shell">
+      {error && (
+        <div className="error-banner" role="alert">
+          <AlertTriangle size={16} />
+          <span>Erro ao conectar com o servidor: {error}</span>
+        </div>
+      )}
       <header className="topbar">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
@@ -66,6 +128,8 @@ function App() {
       </header>
 
       <main className="page-content">
+
+        {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <section className="hero-grid">
           <div className="hero-copy">
             <p className="eyebrow">Monitoramento em tempo real</p>
@@ -92,7 +156,7 @@ function App() {
             <ul className="hero-badges" aria-label="Indicadores principais">
               <li>
                 <HeartPulse size={16} />
-                Prontidao em 94%
+                {healthScore != null ? `Prontidao em ${healthScore}%` : 'Score indisponivel'}
               </li>
               <li>
                 <Sparkles size={16} />
@@ -105,6 +169,7 @@ function App() {
             </ul>
           </div>
 
+          {/* ── Dog profile panel ────────────────────────────────────────── */}
           <aside className="hero-panel">
             <div className="hero-panel__status">
               <span className="status-dot" />
@@ -114,40 +179,105 @@ function App() {
             <div className="dog-card">
               <div>
                 <p className="dog-card__label">Pet em acompanhamento</p>
-                <h2>Thor, golden retriever, 4 anos</h2>
+                {dog
+                  ? <h2>{dog.name}</h2>
+                  : <p className="no-dog-label">Nenhum pet cadastrado</p>}
               </div>
               <div className="dog-card__score">
-                <strong>87</strong>
-                <span>score diario</span>
+                <strong><MetricValue value={healthScore} /></strong>
+                <span>score de saude</span>
               </div>
             </div>
 
-            <div className="hero-panel__pulse">
-              <div className="pulse-ring pulse-ring--outer" />
-              <div className="pulse-ring pulse-ring--inner" />
-              <div className="pulse-core">
-                <span>3.8 km</span>
-                <small>distancia segura</small>
+            {dog ? (
+              <>
+                {/* Profile fields: nome/raça/porte/peso/idade/sexo */}
+                <div className="dog-profile-grid">
+                  <div className="dog-profile-item">
+                    <span>Raça</span>
+                    <strong>{dog.breed}</strong>
+                  </div>
+                  <div className="dog-profile-item">
+                    <span>Porte</span>
+                    <strong>{dog.size}</strong>
+                  </div>
+                  <div className="dog-profile-item">
+                    <span>Peso</span>
+                    <strong>{dog.weight} kg</strong>
+                  </div>
+                  <div className="dog-profile-item">
+                    <span>Sexo</span>
+                    <strong>{dog.gender}</strong>
+                  </div>
+                  {dog.bodyCondition && (
+                    <div className="dog-profile-item dog-profile-item--full">
+                      <span>Condição corporal</span>
+                      <strong>{dog.bodyCondition}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {dog.medicalRestrictions.length > 0 && (
+                  <div className="medical-restrictions">
+                    <span>Restrições médicas</span>
+                    <div className="medical-tags">
+                      {dog.medicalRestrictions.map(r => (
+                        <span key={r} className="medical-tag">{r}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <EmptyState message="Cadastre um pet para ver o perfil completo" />
+            )}
+
+            {/* restrições médicas — optional field */}
+            {dog?.medicalRestrictions && dog.medicalRestrictions.length > 0 && (
+              <div className="medical-restrictions">
+                <span>Restrições médicas</span>
+                <div className="medical-tags">
+                  {dog.medicalRestrictions.map(r => (
+                    <span key={r} className="medical-tag">{r}</span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="hero-panel__mini-grid">
               <article>
-                <span>Ultimo descanso</span>
-                <strong>08h32</strong>
+                <span>Minutos ativos</span>
+                <strong>
+                  <MetricValue
+                    value={todayMetrics ? `${todayMetrics.activeMinutes} min` : null}
+                  />
+                </strong>
               </article>
               <article>
-                <span>Pico de energia</span>
-                <strong>16h10</strong>
+                <span>Passos hoje</span>
+                <strong>
+                  <MetricValue
+                    value={
+                      todayMetrics?.stepsPerDay != null
+                        ? todayMetrics.stepsPerDay.toLocaleString('pt-BR')
+                        : null
+                    }
+                  />
+                </strong>
               </article>
               <article>
                 <span>Alertas</span>
-                <strong>02 leves</strong>
+                <strong>
+                  {todayMetrics
+                    ? todayMetrics.lowActivityAlert ? '01 ativo' : 'Nenhum'
+                    : '—'}
+                </strong>
               </article>
             </div>
           </aside>
         </section>
 
+        {/* ── Dashboard ────────────────────────────────────────────────────── */}
         <section className="section-block" id="dashboard">
           <SectionHeading
             eyebrow="Visao geral"
@@ -155,159 +285,428 @@ function App() {
             description="Uma combinacao de indicadores claros para entender como o cachorro dormiu, se movimentou e reagiu ao ambiente nas ultimas horas."
           />
 
-          <div className="metrics-grid">
-            {topMetrics.map((metric, index) => (
-              <StatCard
-                key={metric.label}
-                icon={metricIcons[index]}
-                label={metric.label}
-                value={metric.value}
-                helper={metric.helper}
-                tone={metric.tone}
-              />
+          {/* alerta de pouca atividade */}
+          {todayMetrics?.lowActivityAlert && (
+            <div className="activity-alert" role="alert">
+              <AlertTriangle size={18} />
+              <span>
+                {dogName} ficou menos de 30 minutos ativo hoje. Considere um passeio curto no fim do dia.
+              </span>
+            </div>
+          )}
+
+          {/* Tab selector */}
+          <div className="dashboard-tabs" role="tablist">
+            {(['hoje', 'semana', 'tendencias'] as Tab[]).map(tab => (
+              <button
+                key={tab}
+                role="tab"
+                aria-selected={activeTab === tab}
+                className={`dashboard-tab${activeTab === tab ? ' dashboard-tab--active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+                type="button"
+              >
+                {tab === 'hoje' ? 'Hoje' : tab === 'semana' ? 'Semana' : 'Tendências'}
+              </button>
             ))}
           </div>
-        </section>
 
-        <section className="analytics-grid">
-          <article className="surface-panel surface-panel--wide">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Calorias e atividade</p>
-                <h3>Evolucao semanal</h3>
-              </div>
-              <div className="panel-badge">Ultimos 7 dias</div>
-            </div>
-
-            <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={weeklyVitals}>
-                  <defs>
-                    <linearGradient id="caloriesFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ff7c45" stopOpacity={0.38} />
-                      <stop offset="95%" stopColor="#ff7c45" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} stroke="#dde4de" strokeDasharray="4 4" />
-                  <XAxis
-                    axisLine={false}
-                    dataKey="day"
-                    tickLine={false}
-                    tick={{ fill: '#5f6d63', fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#5f6d63', fontSize: 12 }}
-                    width={42}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 18,
-                      border: '1px solid #d8dfd9',
-                      background: '#fefcf7',
-                      boxShadow: '0 20px 40px rgba(40, 58, 48, 0.12)',
-                    }}
-                    cursor={{ stroke: '#123524', strokeDasharray: '4 4' }}
-                  />
-                  <Area
-                    dataKey="calories"
-                    fill="url(#caloriesFill)"
-                    stroke="#ff7c45"
-                    strokeWidth={3}
-                    type="monotone"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </article>
-
-          <article className="surface-panel" id="insights">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Qualidade do sono</p>
-                <h3>Ciclos da noite</h3>
-              </div>
-              <MoonStar size={20} className="panel-icon" />
-            </div>
-
-            <div className="sleep-card">
-              <div className="sleep-chart">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={sleepBreakdown}
-                      dataKey="value"
-                      innerRadius={56}
-                      outerRadius={82}
-                      paddingAngle={4}
-                      stroke="none"
-                    >
-                      {sleepBreakdown.map((slice) => (
-                        <Cell key={slice.name} fill={slice.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="sleep-chart__center">
-                  <strong>8h 32m</strong>
-                  <span>sono total</span>
-                </div>
+          {/* ── Tab: Hoje ──────────────────────────────────────────────────── */}
+          {activeTab === 'hoje' && (
+            <>
+              {/* 6 required metrics */}
+              <div className="metrics-grid">
+                <StatCard
+                  icon={Flame}
+                  label="Calorias gastas"
+                  value={
+                    todayMetrics
+                      ? `${todayMetrics.caloriesBurned.toLocaleString('pt-BR')} kcal`
+                      : '—'
+                  }
+                  helper="Gasto energetico total do dia"
+                  tone="ember"
+                />
+                <StatCard
+                  icon={Footprints}
+                  label="Passos no dia"
+                  value={
+                    todayMetrics?.stepsPerDay != null
+                      ? todayMetrics.stepsPerDay.toLocaleString('pt-BR')
+                      : '—'
+                  }
+                  helper="Total de passos registrados pela coleira"
+                  tone="sky"
+                />
+                <StatCard
+                  icon={Activity}
+                  label="Tempo ativo"
+                  value={todayMetrics ? `${todayMetrics.activeMinutes} min` : '—'}
+                  helper="Caminhada, corrida e brincadeira"
+                  tone="mint"
+                />
+                <StatCard
+                  icon={HeartPulse}
+                  label="Score de saude"
+                  value={todayMetrics ? `${todayMetrics.healthScore}/100` : '—'}
+                  helper={todayMetrics?.diagnosis ?? 'Aguardando sincronizacao'}
+                  tone="sand"
+                />
+                <StatCard
+                  icon={Timer}
+                  label="Indice de sedentarismo"
+                  value={
+                    todayMetrics
+                      ? `${Math.round(todayMetrics.sedentaryIndex * 100)}%`
+                      : '—'
+                  }
+                  helper="Percentual de tempo em repouso"
+                  tone="sky"
+                />
+                <StatCard
+                  icon={todayMetrics?.lowActivityAlert ? AlertTriangle : ShieldCheck}
+                  label="Atividade fisica"
+                  value={
+                    todayMetrics
+                      ? todayMetrics.lowActivityAlert
+                        ? 'Alerta'
+                        : 'Em dia'
+                      : '—'
+                  }
+                  helper={
+                    todayMetrics?.lowActivityAlert
+                      ? 'Menos de 30 min ativos registrados'
+                      : 'Meta de atividade atingida'
+                  }
+                  tone={todayMetrics?.lowActivityAlert ? 'ember' : 'mint'}
+                />
               </div>
 
-              <ul className="sleep-legend">
-                {sleepBreakdown.map((slice) => (
-                  <li key={slice.name}>
-                    <span
-                      className="sleep-legend__dot"
-                      style={{ backgroundColor: slice.color }}
-                    />
+              <div className="analytics-grid analytics-grid--two-col">
+                {/* Sleep breakdown */}
+                <article className="surface-panel" id="insights">
+                  <div className="panel-header">
                     <div>
-                      <strong>{slice.name}</strong>
-                      <span>{slice.label}</span>
+                      <p className="eyebrow">Qualidade do sono</p>
+                      <h3>Ciclos da noite</h3>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </article>
+                    <MoonStar size={20} className="panel-icon" />
+                  </div>
+                  <div className="sleep-card">
+                    <div className="sleep-chart">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={sleepBreakdown}
+                            dataKey="value"
+                            innerRadius={56}
+                            outerRadius={82}
+                            paddingAngle={4}
+                            stroke="none"
+                          >
+                            {sleepBreakdown.map(slice => (
+                              <Cell key={slice.name} fill={slice.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="sleep-chart__center">
+                        <strong>8h 32m</strong>
+                        <span>sono total</span>
+                      </div>
+                    </div>
+                    <ul className="sleep-legend">
+                      {sleepBreakdown.map(slice => (
+                        <li key={slice.name}>
+                          <span
+                            className="sleep-legend__dot"
+                            style={{ backgroundColor: slice.color }}
+                          />
+                          <div>
+                            <strong>{slice.name}</strong>
+                            <span>{slice.label}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
 
-          <article className="surface-panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Movimento diario</p>
-                <h3>Minutos ativos</h3>
+                {/* Active minutes bar chart */}
+                <article className="surface-panel">
+                  <div className="panel-header">
+                    <div>
+                      <p className="eyebrow">Movimento diario</p>
+                      <h3>Minutos ativos</h3>
+                    </div>
+                    <Activity size={20} className="panel-icon" />
+                  </div>
+                  <div className="chart-wrap chart-wrap--compact">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} barGap={10}>
+                        <CartesianGrid vertical={false} stroke="#e6ece7" />
+                        <XAxis
+                          dataKey="day"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#5f6d63', fontSize: 12 }}
+                        />
+                        <YAxis hide />
+                        <Tooltip contentStyle={TOOLTIP_STYLE} />
+                        <Bar dataKey="activeMinutes" radius={[14, 14, 6, 6]} fill="#123524" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </article>
               </div>
-              <Activity size={20} className="panel-icon" />
-            </div>
+            </>
+          )}
 
-            <div className="chart-wrap chart-wrap--compact">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyVitals} barGap={10}>
-                  <CartesianGrid vertical={false} stroke="#e6ece7" />
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#5f6d63', fontSize: 12 }}
-                  />
-                  <YAxis hide />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 18,
-                      border: '1px solid #d8dfd9',
-                      background: '#fefcf7',
-                      boxShadow: '0 20px 40px rgba(40, 58, 48, 0.12)',
-                    }}
-                  />
-                  <Bar dataKey="activeMinutes" radius={[14, 14, 6, 6]} fill="#123524" />
-                </BarChart>
-              </ResponsiveContainer>
+          {/* ── Tab: Semana ────────────────────────────────────────────────── */}
+          {activeTab === 'semana' && chartData.length === 0 && (
+            <EmptyState message="Sem dados históricos para esta semana" />
+          )}
+          {activeTab === 'semana' && chartData.length > 0 && (
+            <div className="analytics-grid">
+              {/* Calories evolution */}
+              <article className="surface-panel surface-panel--wide">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Calorias e atividade</p>
+                    <h3>Evolucao semanal</h3>
+                  </div>
+                  <div className="panel-badge">Ultimos 7 dias</div>
+                </div>
+                <div className="chart-wrap">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="caloriesFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ff7c45" stopOpacity={0.38} />
+                          <stop offset="95%" stopColor="#ff7c45" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} stroke="#dde4de" strokeDasharray="4 4" />
+                      <XAxis
+                        axisLine={false}
+                        dataKey="day"
+                        tickLine={false}
+                        tick={{ fill: '#5f6d63', fontSize: 12 }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#5f6d63', fontSize: 12 }}
+                        width={42}
+                      />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        cursor={{ stroke: '#123524', strokeDasharray: '4 4' }}
+                      />
+                      <Area
+                        dataKey="calories"
+                        fill="url(#caloriesFill)"
+                        stroke="#ff7c45"
+                        strokeWidth={3}
+                        type="monotone"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </article>
+
+              {/* Active minutes bar */}
+              <article className="surface-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Movimento semanal</p>
+                    <h3>Minutos ativos</h3>
+                  </div>
+                  <Activity size={20} className="panel-icon" />
+                </div>
+                <div className="chart-wrap chart-wrap--compact">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} barGap={10}>
+                      <CartesianGrid vertical={false} stroke="#e6ece7" />
+                      <XAxis
+                        dataKey="day"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#5f6d63', fontSize: 12 }}
+                      />
+                      <YAxis hide />
+                      <Tooltip contentStyle={TOOLTIP_STYLE} />
+                      <Bar dataKey="activeMinutes" radius={[14, 14, 6, 6]} fill="#123524" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </article>
+
+              {/* Weekly summary */}
+              <article className="surface-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Media da semana</p>
+                    <h3>Resumo</h3>
+                  </div>
+                  <TrendingUp size={20} className="panel-icon" />
+                </div>
+                <ul className="week-summary">
+                  <li>
+                    <span>Calorias/dia</span>
+                    <strong>
+                      {weekAvgCalories > 0
+                        ? `${weekAvgCalories.toLocaleString('pt-BR')} kcal`
+                        : '—'}
+                    </strong>
+                  </li>
+                  <li>
+                    <span>Min. ativos/dia</span>
+                    <strong>{weekAvgMinutes > 0 ? `${weekAvgMinutes} min` : '—'}</strong>
+                  </li>
+                  <li>
+                    <span>Melhor dia</span>
+                    <strong>{bestDay}</strong>
+                  </li>
+                  <li>
+                    <span>Score medio</span>
+                    <strong>{weekAvgScore > 0 ? `${weekAvgScore}/100` : '—'}</strong>
+                  </li>
+                </ul>
+              </article>
             </div>
-          </article>
+          )}
+
+          {/* ── Tab: Tendências ────────────────────────────────────────────── */}
+          {activeTab === 'tendencias' && chartData.length === 0 && (
+            <EmptyState message="Sem dados históricos para analisar tendências" />
+          )}
+          {activeTab === 'tendencias' && chartData.length > 0 && (
+            <div className="analytics-grid">
+              {/* Health score trend line */}
+              <article className="surface-panel surface-panel--wide">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Score de saude</p>
+                    <h3>Tendencia da semana</h3>
+                  </div>
+                  <div className="panel-badge">Ultimos 7 dias</div>
+                </div>
+                <div className="chart-wrap">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid vertical={false} stroke="#dde4de" strokeDasharray="4 4" />
+                      <XAxis
+                        axisLine={false}
+                        dataKey="day"
+                        tickLine={false}
+                        tick={{ fill: '#5f6d63', fontSize: 12 }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#5f6d63', fontSize: 12 }}
+                        domain={[0, 100]}
+                        width={42}
+                      />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        cursor={{ stroke: '#123524', strokeDasharray: '4 4' }}
+                      />
+                      <Line
+                        dataKey="healthScore"
+                        stroke="#56b89a"
+                        strokeWidth={3}
+                        dot={{ fill: '#56b89a', r: 5 }}
+                        activeDot={{ r: 7 }}
+                        type="monotone"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </article>
+
+              {/* Trend indicators */}
+              <article className="surface-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Analise semanal</p>
+                    <h3>Indicadores</h3>
+                  </div>
+                  <TrendingUp size={20} className="panel-icon" />
+                </div>
+                <ul className="week-summary">
+                  <li>
+                    <span>Score hoje</span>
+                    <strong><MetricValue value={healthScore != null ? `${healthScore}/100` : null} /></strong>
+                  </li>
+                  <li>
+                    <span>Score medio</span>
+                    <strong>{weekAvgScore > 0 ? `${weekAvgScore}/100` : '—'}</strong>
+                  </li>
+                  <li>
+                    <span>Melhor score</span>
+                    <strong>
+                      {chartData.length > 0
+                        ? `${Math.max(...chartData.map(d => d.healthScore ?? 0))}/100`
+                        : '—'}
+                    </strong>
+                  </li>
+                  <li>
+                    <span>Passos media/dia</span>
+                    <strong>
+                      {chartData.some(d => d.stepsPerDay != null)
+                        ? avg(
+                            chartData
+                              .map(d => d.stepsPerDay)
+                              .filter((s): s is number => s != null)
+                          ).toLocaleString('pt-BR')
+                        : '—'}
+                    </strong>
+                  </li>
+                </ul>
+              </article>
+
+              {/* Sedentary gauge */}
+              <article className="surface-panel">
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Sedentarismo</p>
+                    <h3>Nivel de repouso</h3>
+                  </div>
+                  <Timer size={20} className="panel-icon" />
+                </div>
+                <div className="sedentary-gauge">
+                  {todayMetrics ? (
+                    <>
+                      <div className="sedentary-gauge__bar">
+                        <div
+                          className="sedentary-gauge__fill"
+                          style={{ width: `${Math.round(todayMetrics.sedentaryIndex * 100)}%` }}
+                        />
+                      </div>
+                      <div className="sedentary-gauge__labels">
+                        <span>Ativo</span>
+                        <strong>{Math.round(todayMetrics.sedentaryIndex * 100)}%</strong>
+                        <span>Sedentario</span>
+                      </div>
+                      <p className="sedentary-gauge__description">
+                        {todayMetrics.sedentaryIndex > 0.5
+                          ? `${dogName} passou mais da metade do dia em repouso. Considere aumentar a atividade gradualmente.`
+                          : `Indice de sedentarismo dentro da faixa saudavel.`}
+                      </p>
+                    </>
+                  ) : (
+                    <EmptyState message="Sem dados de sedentarismo para hoje" />
+                  )}
+                </div>
+              </article>
+            </div>
+          )}
         </section>
 
-        <section className="insight-grid">
+        {/* ── Insights ─────────────────────────────────────────────────────── */}
+        <section className="insight-grid" id="insights">
           <article className="surface-panel surface-panel--accent">
             <div className="panel-header">
               <div>
@@ -318,7 +717,7 @@ function App() {
             </div>
 
             <p className="coach-note">
-              Thor acordou bem recuperado, mas teve queda de energia apos um pico
+              {dogName} acordou bem recuperado, mas teve queda de energia apos um pico
               forte de atividade no meio da tarde. O sistema sugere uma caminhada
               curta no fim do dia e reforco de descanso depois das 20h.
             </p>
@@ -326,7 +725,6 @@ function App() {
             <ul className="factor-list">
               {readinessFactors.map((factor, index) => {
                 const Icon = factorIcons[index]
-
                 return (
                   <li key={factor.title}>
                     <span className="factor-icon">
@@ -355,7 +753,7 @@ function App() {
             </div>
 
             <ol className="timeline-list">
-              {careTimeline.map((item) => (
+              {careTimeline.map(item => (
                 <li key={item.time}>
                   <span className="timeline-time">{item.time}</span>
                   <div>
@@ -368,6 +766,7 @@ function App() {
           </article>
         </section>
 
+        {/* ── Features ─────────────────────────────────────────────────────── */}
         <section className="section-block section-block--features">
           <SectionHeading
             eyebrow="Porque funciona"
@@ -376,7 +775,7 @@ function App() {
           />
 
           <div className="feature-grid">
-            {featureHighlights.map((feature) => (
+            {featureHighlights.map(feature => (
               <article className="feature-card" key={feature.title}>
                 <h3>{feature.title}</h3>
                 <p>{feature.description}</p>

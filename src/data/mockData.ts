@@ -25,14 +25,16 @@ export const topMetrics = [
   },
 ]
 
+// Fallback used while API response is loading.
+// Shape must match DayMetrics from src/api/index.ts.
 export const weeklyVitals = [
-  { day: 'Seg', calories: 980, activeMinutes: 62 },
-  { day: 'Ter', calories: 1130, activeMinutes: 74 },
-  { day: 'Qua', calories: 1040, activeMinutes: 69 },
-  { day: 'Qui', calories: 1210, activeMinutes: 82 },
-  { day: 'Sex', calories: 1195, activeMinutes: 88 },
-  { day: 'Sab', calories: 1375, activeMinutes: 102 },
-  { day: 'Dom', calories: 1248, activeMinutes: 96 },
+  { day: 'Seg', date: '', calories: 980,  activeMinutes: 62,  stepsPerDay: 6200,  healthScore: 81 },
+  { day: 'Ter', date: '', calories: 1130, activeMinutes: 74,  stepsPerDay: 7400,  healthScore: 86 },
+  { day: 'Qua', date: '', calories: 1040, activeMinutes: 69,  stepsPerDay: 6900,  healthScore: 83 },
+  { day: 'Qui', date: '', calories: 1210, activeMinutes: 82,  stepsPerDay: 8200,  healthScore: 89 },
+  { day: 'Sex', date: '', calories: 1195, activeMinutes: 88,  stepsPerDay: 8800,  healthScore: 91 },
+  { day: 'Sab', date: '', calories: 1375, activeMinutes: 102, stepsPerDay: 10200, healthScore: 95 },
+  { day: 'Dom', date: '', calories: 1248, activeMinutes: 96,  stepsPerDay: 8420,  healthScore: 87 },
 ]
 
 export const sleepBreakdown = [

@@ -382,7 +382,7 @@
 }
 
 .metrics-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .stat-card {
@@ -646,6 +646,266 @@
   color: var(--ink-700);
 }
 
+/* ── Loading screen ────────────────────────────────────────────────────── */
+
+.app-loading {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  gap: 16px;
+  text-align: center;
+  color: var(--ink-700);
+}
+
+.app-loading__spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(18, 53, 36, 0.12);
+  border-top-color: var(--leaf-700);
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error banner ───────────────────────────────────────────────────────── */
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(255, 124, 69, 0.1);
+  border-bottom: 1px solid rgba(255, 124, 69, 0.2);
+  color: #c05220;
+  font-size: 0.94rem;
+  font-weight: 500;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
+  border-radius: 18px;
+  background: rgba(18, 53, 36, 0.04);
+  border: 1px dashed rgba(18, 53, 36, 0.15);
+  color: var(--ink-700);
+  font-size: 0.94rem;
+}
+
+/* ── No data metric value ───────────────────────────────────────────────── */
+
+.metric-no-data {
+  color: var(--ink-700);
+  font-size: 0.9em;
+}
+
+/* ── No dog label (hero panel) ─────────────────────────────────────────── */
+
+.no-dog-label {
+  color: rgba(243, 240, 232, 0.55);
+  font-size: 0.94rem;
+  margin: 4px 0 0;
+}
+
+/* ── Dashboard tabs ────────────────────────────────────────────────────── */
+
+.dashboard-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.dashboard-tab {
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 53, 36, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink-700);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.dashboard-tab:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.dashboard-tab--active {
+  background: var(--leaf-700);
+  color: #fffdf7;
+  border-color: transparent;
+  box-shadow: 0 8px 20px rgba(18, 53, 36, 0.22);
+}
+
+/* ── Low activity alert ─────────────────────────────────────────────────── */
+
+.activity-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 124, 69, 0.1);
+  border: 1px solid rgba(255, 124, 69, 0.2);
+  color: #c05220;
+  font-weight: 500;
+}
+
+/* ── Dog profile grid (hero panel) ─────────────────────────────────────── */
+
+.dog-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 16px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dog-profile-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dog-profile-item--full {
+  grid-column: span 2;
+}
+
+.dog-profile-item span {
+  font-size: 0.8rem;
+  color: rgba(243, 240, 232, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dog-profile-item strong {
+  font-size: 0.98rem;
+  color: rgba(243, 240, 232, 0.95);
+}
+
+/* ── Medical restrictions (hero panel) ─────────────────────────────────── */
+
+.medical-restrictions {
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.medical-restrictions > span {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(243, 240, 232, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.medical-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.medical-tag {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 124, 69, 0.2);
+  color: #ffcaaa;
+  font-size: 0.85rem;
+}
+
+/* ── Two-column analytics variant (Hoje tab) ───────────────────────────── */
+
+.analytics-grid--two-col {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ── Week summary list ──────────────────────────────────────────────────── */
+
+.week-summary {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.week-summary li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(18, 53, 36, 0.04);
+}
+
+.week-summary li span {
+  color: var(--ink-700);
+  font-size: 0.94rem;
+}
+
+.week-summary li strong {
+  font-size: 1.1rem;
+  color: var(--ink-900);
+}
+
+/* ── Sedentary gauge (Tendências tab) ──────────────────────────────────── */
+
+.sedentary-gauge {
+  display: grid;
+  gap: 14px;
+}
+
+.sedentary-gauge__bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(18, 53, 36, 0.1);
+  overflow: hidden;
+}
+
+.sedentary-gauge__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #56b89a, #f4b55f, #ff7c45);
+  transition: width 600ms ease;
+}
+
+.sedentary-gauge__labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sedentary-gauge__labels span {
+  font-size: 0.85rem;
+  color: var(--ink-700);
+}
+
+.sedentary-gauge__labels strong {
+  font-size: 1.4rem;
+  color: var(--ink-900);
+}
+
+.sedentary-gauge__description {
+  font-size: 0.94rem;
+  color: var(--ink-700);
+  line-height: 1.5;
+}
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+
 @keyframes orbit {
   0%,
   100% {
@@ -666,6 +926,7 @@
 
   .hero-grid,
   .analytics-grid,
+  .analytics-grid--two-col,
   .insight-grid,
   .feature-grid,
   .metrics-grid {
@@ -692,6 +953,14 @@
   }
 
   .hero-panel__mini-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-tabs {
+    flex-wrap: wrap;
+  }
+
+  .metrics-grid {
     grid-template-columns: 1fr;
   }
 

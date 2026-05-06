@@ -1,0 +1,169 @@
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema petmove-version1
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `petmove-version1` DEFAULT CHARACTER SET utf8mb4 ;
+USE `petmove-version1` ;
+
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`daily_insights`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`daily_insights` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `dog_id` INT NOT NULL,
+  `date` DATE NOT NULL,
+  `diagnosis` VARCHAR(150) CHARACTER SET 'ascii' NOT NULL DEFAULT 'Saudavel',
+  `total_calories` FLOAT NOT NULL DEFAULT '0',
+  `active_seconds` INT NOT NULL DEFAULT '0' COMMENT 'Alterar para minutos só na hora de mostrar',
+  `time_stalled` INT NOT NULL DEFAULT '0' COMMENT 'Em segundos',
+  `time_walking` INT NOT NULL DEFAULT '0' COMMENT 'Em segundos',
+  `time_running` INT NOT NULL DEFAULT '0' COMMENT 'Em segundos',
+  `time_off` INT NOT NULL DEFAULT '0' COMMENT 'Tempo da coleira desligada',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_insight_dog` FOREIGN KEY (`dog_id`) REFERENCES `petmove-version1`.`dog` (`id`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`collar_logs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`collar_logs` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `collar_id` INT NOT NULL,
+  `state` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'Parado',
+  `magnitude` FLOAT NULL DEFAULT NULL,
+  `x_axis` DOUBLE NULL DEFAULT NULL,
+  `y_axis` DOUBLE NULL DEFAULT NULL,
+  `z_axis` DOUBLE NULL DEFAULT NULL,
+  `battery` INT NOT NULL DEFAULT '100',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `fk_logs_collar_idx` (`collar_id` ASC) VISIBLE,
+  INDEX `idx_created_at` (`created_at` ASC) VISIBLE,
+  CONSTRAINT `fk_logs_collar`
+    FOREIGN KEY (`collar_id`) 
+    REFERENCES `petmove-version1`.`collar` (`id`) 
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`user`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`user` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `username` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'default',
+  `password` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'senha123',
+  `phone` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT '(00)000000000',
+  `email` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'default@email.com' UNIQUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `age` INT NOT NULL DEFAULT '0',
+  `is_admin` INT NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`collar`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`collar` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `date_of_purchase` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `user_id_idx` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `user_id1`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `petmove-version1`.`user` (`id`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`conditions`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`conditions` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'default',
+  `synptoms` VARCHAR(150) CHARACTER SET 'ascii' NULL DEFAULT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`dog_breed`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`dog_breed` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `avg_heigth` FLOAT NOT NULL DEFAULT '0',
+  `avg_weigth` FLOAT NOT NULL DEFAULT '0',
+  `life_expectancy` INT NOT NULL DEFAULT '0',
+  `constant` DOUBLE NOT NULL DEFAULT '0' COMMENT 'usar para a fórmula do gasto calórico',
+  `observations` VARCHAR(200) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`dog`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`dog` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `birth_date` DATETIME NULL DEFAULT NULL,
+  `gender` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'Nao Informado',
+  `weight` FLOAT NOT NULL DEFAULT '0',
+  `height` FLOAT NOT NULL DEFAULT '0',
+  `size` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'Medio' COMMENT 'porte do animal (pequeno, médio, grande)',
+  `user_id` INT NOT NULL,
+  `Dog_breed_id` INT NOT NULL,
+  `collar_id` INT NOT NULL,
+  `name` VARCHAR(45) CHARACTER SET 'ascii' NOT NULL DEFAULT 'Caramelo',
+  PRIMARY KEY (`id`),
+  INDEX `fk_dog_user1_idx` (`user_id` ASC) VISIBLE,
+  INDEX `fk_dog_Dog_breed1_idx` (`Dog_breed_id` ASC) VISIBLE,
+  INDEX `fk_dog_collar1_idx` (`collar_id` ASC) VISIBLE,
+  CONSTRAINT `fk_dog_collar1`
+    FOREIGN KEY (`collar_id`)
+    REFERENCES `petmove-version1`.`collar` (`id`)
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_dog_Dog_breed1`
+    FOREIGN KEY (`Dog_breed_id`)
+    REFERENCES `petmove-version1`.`dog_breed` (`id`)
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_dog_user1`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `petmove-version1`.`user` (`id`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
+-- -----------------------------------------------------
+-- Table `petmove-version1`.`treatment`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `petmove-version1`.`treatment` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `dog_id` INT NOT NULL,
+  `conditions_id` INT NOT NULL,
+  `actions` VARCHAR(300) CHARACTER SET 'ascii' NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `fk_dog_has_conditions_dog_idx` (`dog_id` ASC) VISIBLE,
+  INDEX `fk_dog_has_conditions_conditions_idx` (`conditions_id` ASC) VISIBLE,
+  CONSTRAINT `fk_treatment_dog`
+    FOREIGN KEY (`dog_id`)
+    REFERENCES `petmove-version1`.`dog` (`id`)
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_treatment_conditions`
+    FOREIGN KEY (`conditions_id`)
+    REFERENCES `petmove-version1`.`conditions` (`id`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
