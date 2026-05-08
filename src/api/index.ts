@@ -29,6 +29,13 @@ export type TodayMetrics = {
   diagnosis: string               // from daily_insights.diagnosis
 }
 
+export type DogStatus = {
+  state: string          // 'Andando' | 'Correndo' | 'Pulando' | 'Parado/Descansando'
+  battery: number        // 0–100
+  magnitude: number | null
+  created_at: string
+}
+
 export type DayMetrics = {
   day: string                     // short day label, e.g. 'Seg'
   date: string                    // ISO date

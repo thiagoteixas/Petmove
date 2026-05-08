@@ -35,17 +35,60 @@ import {
 import { SectionHeading } from './components/SectionHeading'
 import { StatCard } from './components/StatCard'
 import { usePetData } from './hooks/usePetData'
+import { useDogStatus } from './hooks/useDogStatus'
+import { useCollarStats } from './hooks/useCollarStats'
+import type { CollarStats } from './hooks/useCollarStats'
+import { useCollarActivity } from './hooks/useCollarActivity'
 import {
   careTimeline,
-  featureHighlights,
   readinessFactors,
-  sleepBreakdown,
 } from './data/mockData'
 import './App.css'
 
 type Tab = 'hoje' | 'semana' | 'tendencias'
 
 const factorIcons = [ShieldCheck, BellRing, Radar] as const
+
+const STATE_LABELS: Record<string, string> = {
+  'Andando': 'Andando',
+  'Correndo': 'Correndo',
+  'Pulando': 'Pulando',
+  'Parado/Descansando': 'Descansando',
+}
+
+const STATE_DOT_CLASS: Record<string, string> = {
+  'Andando': 'active',
+  'Correndo': 'running',
+  'Pulando': 'active',
+  'Parado/Descansando': 'resting',
+}
+
+function heroMessage(name: string | null, state: string | null): string {
+  const n = name ?? 'Seu pet'
+  switch (state) {
+    case 'Andando':            return `${n} está em movimento — é hora de brincar!`
+    case 'Correndo':           return `${n} está em plena corrida. Que energia hoje!`
+    case 'Pulando':            return `${n} está pulando de alegria. Aproveite o momento!`
+    case 'Parado/Descansando': return `${n} está merecidamente descansando. O dia foi longo!`
+    default:                   return 'Petmove acompanha gasto calórico, sono, atividade e sinais de estresse ao longo do dia.'
+  }
+}
+
+const STATE_COLORS: Record<string, string> = {
+  'Andando': '#56b89a',
+  'Correndo': '#ff7c45',
+  'Pulando': '#f4b55f',
+  'Parado/Descansando': '#7fb3c8',
+}
+
+function toStateSlices(stats: CollarStats) {
+  return stats.stateDistribution.map(d => ({
+    name: STATE_LABELS[d.state] ?? d.state,
+    value: d.count,
+    color: STATE_COLORS[d.state] ?? '#aaa',
+    label: `${Math.round((d.count / stats.total) * 100)}%`,
+  }))
+}
 
 const TOOLTIP_STYLE = {
   borderRadius: 18,
@@ -74,6 +117,11 @@ function MetricValue({ value }: { value: string | number | null | undefined }) {
 
 function App() {
   const { dog, todayMetrics, weekMetrics, loading, error } = usePetData()
+  const { status: collarStatus, connected: collarConnected } = useDogStatus(1)
+  const { stats: collarStats } = useCollarStats(1)
+  const stateSlices = collarStats ? toStateSlices(collarStats) : []
+  const { data: hourlyActivity } = useCollarActivity(1)
+  const totalActiveReadings = hourlyActivity.reduce((s, h) => s + h.active, 0)
 
   const [activeTab, setActiveTab] = useState<Tab>('hoje')
 
@@ -134,13 +182,11 @@ function App() {
           <div className="hero-copy">
             <p className="eyebrow">Monitoramento em tempo real</p>
             <h1>
-              Saude e comportamento do cachorro em um dashboard claro,
-              elegante e acionavel.
+              {heroMessage(dog?.name ?? null, collarStatus?.state ?? null)}
             </h1>
             <p className="hero-description">
-              O Petmove acompanha gasto calorico, sono, atividade e sinais de
-              estresse ao longo do dia, sincroniza tudo com a nuvem e transforma
-              os dados em decisoes simples para o tutor.
+              Petmove acompanha gasto calórico, sono, atividade e sinais de
+              estresse ao longo do dia — tudo em um dashboard claro e acionável.
             </p>
 
             <div className="hero-actions">
@@ -172,8 +218,23 @@ function App() {
           {/* ── Dog profile panel ────────────────────────────────────────── */}
           <aside className="hero-panel">
             <div className="hero-panel__status">
-              <span className="status-dot" />
-              Coleira online
+              <span
+                className={`status-dot status-dot--${
+                  !collarConnected || !collarStatus
+                    ? 'offline'
+                    : (STATE_DOT_CLASS[collarStatus.state] ?? 'resting')
+                }`}
+              />
+              <span>
+                {!collarConnected || !collarStatus
+                  ? 'Sem sinal'
+                  : (STATE_LABELS[collarStatus.state] ?? collarStatus.state)}
+              </span>
+              {collarStatus && (
+                <span className="collar-battery">
+                  {collarStatus.battery}%
+                </span>
+              )}
             </div>
 
             <div className="dog-card">
@@ -230,18 +291,6 @@ function App() {
               </>
             ) : (
               <EmptyState message="Cadastre um pet para ver o perfil completo" />
-            )}
-
-            {/* restrições médicas — optional field */}
-            {dog?.medicalRestrictions && dog.medicalRestrictions.length > 0 && (
-              <div className="medical-restrictions">
-                <span>Restrições médicas</span>
-                <div className="medical-tags">
-                  {dog.medicalRestrictions.map(r => (
-                    <span key={r} className="medical-tag">{r}</span>
-                  ))}
-                </div>
-              </div>
             )}
 
             <div className="hero-panel__mini-grid">
@@ -383,80 +432,101 @@ function App() {
               </div>
 
               <div className="analytics-grid analytics-grid--two-col">
-                {/* Sleep breakdown */}
+                {/* Collar state distribution — real data from collar_logs */}
                 <article className="surface-panel" id="insights">
                   <div className="panel-header">
                     <div>
-                      <p className="eyebrow">Qualidade do sono</p>
-                      <h3>Ciclos da noite</h3>
+                      <p className="eyebrow">Leituras da coleira</p>
+                      <h3>Estados registrados</h3>
                     </div>
                     <MoonStar size={20} className="panel-icon" />
                   </div>
-                  <div className="sleep-card">
-                    <div className="sleep-chart">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={sleepBreakdown}
-                            dataKey="value"
-                            innerRadius={56}
-                            outerRadius={82}
-                            paddingAngle={4}
-                            stroke="none"
-                          >
-                            {sleepBreakdown.map(slice => (
-                              <Cell key={slice.name} fill={slice.color} />
-                            ))}
-                          </Pie>
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="sleep-chart__center">
-                        <strong>8h 32m</strong>
-                        <span>sono total</span>
+                  {stateSlices.length === 0 ? (
+                    <EmptyState message="Sem leituras de coleira disponíveis" />
+                  ) : (
+                    <div className="sleep-card">
+                      <div className="sleep-chart">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={stateSlices}
+                              dataKey="value"
+                              innerRadius={56}
+                              outerRadius={82}
+                              paddingAngle={4}
+                              stroke="none"
+                            >
+                              {stateSlices.map(slice => (
+                                <Cell key={slice.name} fill={slice.color} />
+                              ))}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="sleep-chart__center">
+                          <strong>{collarStats?.total ?? 0}</strong>
+                          <span>leituras</span>
+                        </div>
                       </div>
+                      <ul className="sleep-legend">
+                        {stateSlices.map(slice => (
+                          <li key={slice.name}>
+                            <span
+                              className="sleep-legend__dot"
+                              style={{ backgroundColor: slice.color }}
+                            />
+                            <div>
+                              <strong>{slice.name}</strong>
+                              <span>{slice.label} — {slice.value} leituras</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="sleep-legend">
-                      {sleepBreakdown.map(slice => (
-                        <li key={slice.name}>
-                          <span
-                            className="sleep-legend__dot"
-                            style={{ backgroundColor: slice.color }}
-                          />
-                          <div>
-                            <strong>{slice.name}</strong>
-                            <span>{slice.label}</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  )}
                 </article>
 
-                {/* Active minutes bar chart */}
+                {/* Active minutes by hour — real collar_logs data */}
                 <article className="surface-panel">
                   <div className="panel-header">
                     <div>
-                      <p className="eyebrow">Movimento diario</p>
-                      <h3>Minutos ativos</h3>
+                      <p className="eyebrow">Movimento diário</p>
+                      <h3>Atividade ao longo do dia</h3>
                     </div>
-                    <Activity size={20} className="panel-icon" />
+                    {totalActiveReadings > 0 && (
+                      <div className="panel-badge">{totalActiveReadings} registros ativos</div>
+                    )}
                   </div>
-                  <div className="chart-wrap chart-wrap--compact">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} barGap={10}>
-                        <CartesianGrid vertical={false} stroke="#e6ece7" />
-                        <XAxis
-                          dataKey="day"
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: '#5f6d63', fontSize: 12 }}
-                        />
-                        <YAxis hide />
-                        <Tooltip contentStyle={TOOLTIP_STYLE} />
-                        <Bar dataKey="activeMinutes" radius={[14, 14, 6, 6]} fill="#123524" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {hourlyActivity.length === 0 ? (
+                    <EmptyState message="Sem leituras de movimento para o dia" />
+                  ) : (
+                    <div className="chart-wrap chart-wrap--compact">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={hourlyActivity} barGap={2}>
+                          <CartesianGrid vertical={false} stroke="#e6ece7" />
+                          <XAxis
+                            dataKey="time"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#5f6d63', fontSize: 11 }}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#5f6d63', fontSize: 11 }}
+                            width={24}
+                            allowDecimals={false}
+                          />
+                          <Tooltip
+                            contentStyle={TOOLTIP_STYLE}
+                            formatter={(v) => [`${v} registros`, 'Ativo']}
+                            labelFormatter={(t) => `Horário: ${t}`}
+                          />
+                          <Bar dataKey="active" radius={[6, 6, 2, 2]} fill="#123524" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </article>
               </div>
             </>
@@ -766,23 +836,6 @@ function App() {
           </article>
         </section>
 
-        {/* ── Features ─────────────────────────────────────────────────────── */}
-        <section className="section-block section-block--features">
-          <SectionHeading
-            eyebrow="Porque funciona"
-            title="O que o tutor enxerga no site"
-            description="O mockup foi desenhado como um SPA simples, com blocos claros para status em tempo real, historico, recomendacoes e leitura rapida do bem-estar do animal."
-          />
-
-          <div className="feature-grid">
-            {featureHighlights.map(feature => (
-              <article className="feature-card" key={feature.title}>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
       </main>
     </div>
   )

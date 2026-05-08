@@ -251,6 +251,33 @@
   border-radius: 50%;
   background: #7df4bc;
   box-shadow: 0 0 0 6px rgba(125, 244, 188, 0.18);
+  flex-shrink: 0;
+}
+
+.status-dot--active {
+  background: #7df4bc;
+  box-shadow: 0 0 0 6px rgba(125, 244, 188, 0.18);
+}
+
+.status-dot--running {
+  background: #ffb347;
+  box-shadow: 0 0 0 6px rgba(255, 179, 71, 0.22);
+}
+
+.status-dot--resting {
+  background: #8ec4d8;
+  box-shadow: 0 0 0 6px rgba(142, 196, 216, 0.18);
+}
+
+.status-dot--offline {
+  background: #888;
+  box-shadow: 0 0 0 6px rgba(136, 136, 136, 0.18);
+}
+
+.collar-battery {
+  margin-left: auto;
+  font-size: 0.78rem;
+  opacity: 0.72;
 }
 
 .dog-card {

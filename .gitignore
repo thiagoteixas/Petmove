@@ -27,4 +27,5 @@ CLAUDE.md
 
 # Dev scripts — não subir para o repo
 server/explore.js
+server/aggregate.js
 server/.env
